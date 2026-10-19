@@ -2,6 +2,8 @@
 
 Aplikasi web kasir sederhana untuk diuji secara lokal. Buka `index.html` di browser, atau gunakan VS Code Live Server agar alamat aplikasi konsisten. Tidak ada server/database atau integrasi pembayaran dalam prototipe ini.
 
+Peringatan terpenting: banner aplikasi kini menegaskan bahwa ini hanya prototipe. Pembayaran QRIS/metode lain tidak diproses otomatis—status lunas harus diverifikasi staff. Sebelum dipakai untuk penjualan sungguhan, pindahkan penyimpanan ke backend/database persisten dengan autentikasi, audit, dan backup yang teruji.
+
 ## Struktur folder
 
 ```text
