@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#174b3a">
+  <title>UP+ Cafe POS</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="UP+ Cafe POS">
+      <span class="brand-mark">UP+</span>
+      <span><strong>UP+ Cafe POS</strong><small>Kasir sederhana, pesanan lebih rapi</small></span>
+    </a>
+    <time id="todayLabel"></time>
+  </header>
+
+  <nav class="tabs" aria-label="Navigasi utama">
+    <button class="tab active" data-tab="pos">Kasir</button>
+    <button class="tab" data-tab="history">Riwayat</button>
+    <button class="tab" data-tab="report">Laporan</button>
+    <button class="tab" data-tab="menus">Kelola Menu</button>
+    <button class="tab" data-tab="backup">Backup & Info</button>
+  </nav>
+
+  <main>
+    <aside class="critical-warning" role="alert">
+      <strong>PERINGATAN — PROTOTIPE, BUKAN UNTUK TRANSAKSI RIIL.</strong>
+      Data hanya ada di browser/perangkat ini dan dapat hilang. Simpan backup JSON terpisah.
+      Pembayaran QRIS/metode lain tidak diproses otomatis; staff harus memeriksa dan mencatatnya.
+      Printer fisik belum diuji.
+    </aside>
+
+    <section class="panel active" id="panel-pos">
+      <div class="pos-layout">
+        <section>
+          <div class="section-title"><div><h1>Pilih menu</h1><p>Tekan tombol menu untuk menambahkannya ke pesanan.</p></div></div>
+          <div id="menuGrid" class="menu-grid"></div>
+        </section>
+
+        <aside class="card cart">
+          <div class="cart-heading"><h2>Pesanan</h2><span id="cartCount" class="badge">0 item</span></div>
+          <label class="field">Nama pelanggan (opsional)
+            <input id="customerName" maxlength="80" autocomplete="off" placeholder="Contoh: Budi">
+          </label>
+          <div id="cartItems" class="cart-items"><p class="empty">Keranjang masih kosong.</p></div>
+          <label class="field">Metode pembayaran
+            <select id="paymentMethod">
+              <option>Tunai</option><option>QRIS</option><option>Lainnya</option>
+            </select>
+          </label>
+          <label id="cashField" class="field">Uang diterima (Rp)
+            <input id="cashReceived" type="number" min="0" step="500" inputmode="numeric" placeholder="Masukkan nominal">
+          </label>
+          <div class="totals">
+            <div><span>Subtotal</span><strong id="subtotal">Rp0</strong></div>
+            <div><span>Pajak / biaya</span><strong>Rp0</strong></div>
+            <div class="grand-total"><span>Total</span><strong id="total">Rp0</strong></div>
+            <div id="changeRow" hidden><span>Kembalian</span><strong id="changeAmount">Rp0</strong></div>
+          </div>
+          <button id="checkoutButton" class="button checkout" disabled>Checkout</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-history">
+      <div class="section-title"><div><h1>Riwayat transaksi</h1><p>Transaksi yang selesai tidak dihapus; pembatalan dicatat sebagai status.</p></div></div>
+      <div class="toolbar">
+        <input id="historySearch" type="search" placeholder="Cari nomor transaksi atau nama pelanggan">
+        <button id="clearSearch" class="button secondary">Hapus pencarian</button>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nomor</th><th>Waktu</th><th>Pelanggan</th><th>Total</th><th>Pembayaran</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody id="historyRows"></tbody>
+      </table></div>
+      <p id="historyEmpty" class="empty" hidden>Belum ada transaksi yang cocok.</p>
+    </section>
+
+    <section class="panel" id="panel-report">
+      <div class="section-title"><div><h1>Laporan penjualan harian</h1><p>Penjualan dihitung dari transaksi lunas yang tidak dibatalkan.</p></div></div>
+      <div class="toolbar"><label for="reportDate">Tanggal laporan</label><input id="reportDate" type="date"></div>
+      <div class="stats">
+        <article class="stat"><span>Transaksi lunas</span><strong id="reportCount">0</strong></article>
+        <article class="stat"><span>Penjualan diterima</span><strong id="reportSales">Rp0</strong></article>
+        <article class="stat"><span>Menunggu pembayaran</span><strong id="reportPending">0</strong></article>
+        <article class="stat"><span>Dibatalkan (tercatat)</span><strong id="reportCancelled">0</strong></article>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nomor</th><th>Pelanggan</th><th>Metode</th><th>Pembayaran</th><th>Status</th><th>Total</th></tr></thead>
+        <tbody id="reportRows"></tbody>
+      </table></div>
+      <p id="reportEmpty" class="empty" hidden>Tidak ada transaksi pada tanggal ini.</p>
+    </section>
+
+    <section class="panel" id="panel-menus">
+      <div class="section-title"><div><h1>Kelola menu</h1><p>Transaksi lama tetap menyimpan nama dan harga saat dibeli.</p></div></div>
+      <form id="menuForm" class="card menu-form">
+        <h2 id="menuFormHeading">Tambah menu</h2>
+        <input id="menuId" type="hidden">
+        <div class="form-grid">
+          <label class="field">Nama menu<input id="menuName" maxlength="60" required placeholder="Contoh: Kopi Susu UP+"></label>
+          <label class="field">Harga (Rp)<input id="menuPrice" type="number" min="1" step="500" required placeholder="Contoh: 22000"></label>
+          <label class="field">Kategori<input id="menuCategory" maxlength="40" placeholder="Contoh: Kopi"></label>
+          <label class="field">Ikon / emoji<input id="menuIcon" maxlength="8" placeholder="☕"></label>
+        </div>
+        <button class="button" type="submit">Simpan menu</button>
+        <button id="cancelMenuEdit" class="button secondary" type="button" hidden>Batal edit</button>
+      </form>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Menu</th><th>Kategori</th><th>Harga</th><th>Aksi</th></tr></thead>
+        <tbody id="menuRows"></tbody>
+      </table></div>
+      <p id="menuEmpty" class="empty" hidden>Belum ada menu. Tambahkan menu di atas.</p>
+    </section>
+
+    <section class="panel" id="panel-backup">
+      <div class="section-title"><div><h1>Backup & informasi penting</h1><p>Aplikasi ini berjalan lokal, tanpa server dan tanpa sinkronisasi.</p></div></div>
+      <div class="critical-warning">
+        <strong>Jangan gunakan sebagai satu-satunya catatan transaksi usaha.</strong>
+        localStorage dapat dihapus browser, tidak tersinkron, dan bukan database yang tahan gangguan.
+        Unduh backup JSON dan simpan di lokasi terpisah secara rutin.
+      </div>
+      <article class="card info-card">
+        <h2>Backup / pemulihan</h2>
+        <p>Ekspor menyimpan menu dan transaksi ke satu file JSON. Impor menggabungkan data unik dan tidak menghapus transaksi yang sudah ada.</p>
+        <div class="toolbar">
+          <button id="exportButton" class="button">Unduh backup JSON</button>
+          <button id="importButton" class="button secondary">Pilih file backup</button>
+          <input id="importFile" type="file" accept=".json,application/json" hidden>
+        </div>
+        <p id="storageStatus" class="info-note"></p>
+      </article>
+      <article class="card info-card">
+        <h2>Keterbatasan prototipe</h2>
+        <ul>
+          <li>localStorage khusus browser/origin dan perangkat ini; data dapat hilang bila data situs dihapus, browser di-reset, atau perangkat rusak.</li>
+          <li>QRIS dan pembayaran lain tidak terhubung ke penyedia pembayaran; status lunas harus diperiksa dan dicatat oleh staff.</li>
+          <li>Cetak menggunakan dialog print browser. Ukuran hasil bergantung pada browser, driver, dan pengaturan printer.</li>
+          <li>Aplikasi produksi perlu backend/database persisten, autentikasi, audit, backup terjadwal, sinkronisasi, dan prosedur pemulihan teruji.</li>
+        </ul>
+      </article>
+    </section>
+
+    <footer>UP+ Cafe POS · Prototipe lokal · Cadangkan data secara berkala</footer>
+  </main>
+
+  <div id="confirmDialog" class="overlay" role="dialog" aria-modal="true" aria-labelledby="confirmHeading" hidden>
+    <div class="dialog">
+      <h2 id="confirmHeading">Konfirmasi checkout</h2>
+      <p id="confirmMessage"></p>
+      <div class="dialog-actions"><button id="cancelCheckout" class="button secondary">Kembali</button><button id="confirmCheckout" class="button">Selesaikan transaksi</button></div>
+    </div>
+  </div>
+  <div id="printDialog" class="overlay" role="dialog" aria-modal="true" aria-labelledby="printHeading" hidden>
+    <div class="dialog">
+      <h2 id="printHeading">Cetak struk</h2>
+      <p>Pilih lebar kertas. Pengaturan akhir mengikuti browser dan driver printer.</p>
+      <label class="field">Lebar kertas<select id="paperWidth"><option value="58">58 mm</option><option value="80">80 mm</option></select></label>
+      <div class="dialog-actions"><button id="closePrintDialog" class="button secondary">Tutup</button><button id="printButton" class="button">Buka dialog cetak</button></div>
+    </div>
+  </div>
+  <div id="receipt" aria-hidden="true"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
